@@ -75,3 +75,9 @@ Clone and run `https://github.com/zainaris/portal-support-artamedia.git` (intern
   - Counts endpoint updated with `documents.KMZ` and adjusted `_total`.
 - Verified (iteration_3.json): backend 8/8 pytest pass, frontend all covered scenarios OK.
 - **Known constraint**: KMZ files stored as base64 inside a MongoDB doc — with many revisions per mapping, doc can approach 16MB limit. Future: swap to GridFS or S3-compatible blob store.
+
+### 2026-01 (later) — Sidebar wordmark + Greeting ticker (visual polish)
+- Removed the "NOC Support System" Radio-icon logo. Sidebar now shows a two-line wordmark: **"Portal Support"** (light) over **"Artamedia"** (large, animated gradient) using **Bricolage Grotesque** display font + **Sora** brand font. Collapsed sidebar shows a compact "PS" gradient badge.
+- New **`GreetingTicker`** component rendered above the header: static pill on the left with time-based Indonesian greeting ("Selamat pagi/siang/sore/malam, <first name>") + a right-side marquee (`tickerScroll` 38s linear infinite, hover-pauses) rotating friendly NOC lines, date & time.
+- Added CSS utilities: `.font-display`, `.font-brand`, `.brand-gradient` (animated 120deg blue→cyan→teal), `.ticker-track`, `.greeting-bar` (radial+linear soft gradient background). Both light and dark themes tuned.
+- Verified (iteration_4.json): 18/18 UI checks pass, no regression across Dashboard, Customers, Documents (BA + KMZ), Network, Operations. Font family confirmed `"Bricolage Grotesque", Manrope, sans-serif`; ticker animation matches spec.
