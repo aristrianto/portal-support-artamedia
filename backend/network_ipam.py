@@ -29,6 +29,8 @@ from cryptography.fernet import Fernet, InvalidToken
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from starlette import status as http_status
+from librouteros import async_connect
+from librouteros.exceptions import TrapError, FatalError, ConnectionClosed as ROSConnectionClosed
 
 logger = logging.getLogger("noc.ipam")
 
@@ -220,10 +222,10 @@ class RouterIn(BaseModel):
     model_config = ConfigDict(extra="ignore")
     name: str
     host: str
-    api_port: int = 443
+    api_port: int = 8728
     username: str
     password: Optional[str] = None
-    ssl_enabled: bool = True
+    ssl_enabled: bool = False
     verify_ssl: bool = False
     routing_table: str = "main"
     status: Literal["Active", "Inactive"] = "Active"
@@ -285,59 +287,99 @@ class AllocationUpdateIn(BaseModel):
 
 
 # ----------------------------------------------------------------------------
-# MikroTik REST client
+# MikroTik native RouterOS API client (port 8728 plain / 8729 API-SSL)
 # ----------------------------------------------------------------------------
-async def mikrotik_request(router: dict, cipher: Cipher, path: str, timeout: float = 15.0) -> dict:
-    scheme = "https" if router.get("ssl_enabled", True) else "http"
-    url = f"{scheme}://{router['host']}:{router['api_port']}/rest/{path.lstrip('/')}"
+async def _mikrotik_connect(router: dict, cipher: Cipher, timeout: float = 15.0):
+    """Establish an async librouteros connection using stored router credentials.
+    Raises HTTPException on any failure so callers can surface a clean error."""
     pw_token = router.get("password_enc")
     if not pw_token:
         raise HTTPException(status_code=400, detail="Router has no stored password — save credentials first.")
-    password = cipher.decrypt(pw_token)
-    auth = (router["username"], password)
-    verify = bool(router.get("verify_ssl", False))
     try:
-        async with httpx.AsyncClient(verify=verify, timeout=timeout) as client:
-            r = await client.get(url, auth=auth)
-    except httpx.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Cannot reach MikroTik: {e}")
-    if r.status_code == 401:
-        raise HTTPException(status_code=401, detail="Invalid MikroTik credentials")
-    if r.status_code >= 400:
-        raise HTTPException(status_code=502, detail=f"MikroTik returned HTTP {r.status_code}: {r.text[:200]}")
+        password = cipher.decrypt(pw_token)
+    except InvalidToken:
+        raise HTTPException(status_code=500, detail="Stored password could not be decrypted (encryption key mismatch). Please re-enter the router password.")
+
+    ssl_wrapper = None
+    if router.get("ssl_enabled"):
+        ctx = ssl.create_default_context()
+        if not router.get("verify_ssl", False):
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+        ssl_wrapper = ctx
+
     try:
-        return r.json()
-    except Exception:
-        raise HTTPException(status_code=502, detail="MikroTik returned non-JSON body")
+        return await asyncio.wait_for(
+            async_connect(
+                host=str(router["host"]),
+                username=str(router["username"]),
+                password=password,
+                port=int(router.get("api_port") or 8728),
+                timeout=timeout,
+                ssl_wrapper=ssl_wrapper,
+            ),
+            timeout=timeout + 2.0,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail=f"MikroTik connection timed out to {router.get('host')}:{router.get('api_port')} (API port)")
+    except TrapError as e:
+        # Auth failures come back as TrapError from RouterOS
+        raise HTTPException(status_code=401, detail=f"MikroTik login failed: {e}")
+    except FatalError as e:
+        raise HTTPException(status_code=502, detail=f"MikroTik protocol error: {e}")
+    except (ConnectionRefusedError, OSError) as e:
+        raise HTTPException(status_code=502, detail=f"Cannot reach MikroTik API at {router.get('host')}:{router.get('api_port')} — {e}")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"MikroTik connection error: {e}")
+
+
+async def _mikrotik_call(api, cmd: str) -> List[dict]:
+    """Execute a print-style command and collect all rows."""
+    items: List[dict] = []
+    try:
+        async for row in api(cmd):
+            items.append(dict(row))
+    except TrapError as e:
+        raise HTTPException(status_code=502, detail=f"MikroTik command '{cmd}' failed: {e}")
+    except (FatalError, ROSConnectionClosed) as e:
+        raise HTTPException(status_code=502, detail=f"MikroTik connection lost during '{cmd}': {e}")
+    return items
 
 
 async def mikrotik_probe(router: dict, cipher: Cipher) -> dict:
     """Fetch router identity + system resource to prove connection."""
     ident = {"identity": None, "version": None}
+    api = await _mikrotik_connect(router, cipher, timeout=10.0)
     try:
-        id_resp = await mikrotik_request(router, cipher, "system/identity", timeout=10.0)
-        if isinstance(id_resp, dict):
-            ident["identity"] = id_resp.get("name")
-        elif isinstance(id_resp, list) and id_resp:
-            ident["identity"] = id_resp[0].get("name")
-    except HTTPException:
-        raise
-    try:
-        res = await mikrotik_request(router, cipher, "system/resource", timeout=10.0)
-        if isinstance(res, dict):
-            ident["version"] = res.get("version")
-        elif isinstance(res, list) and res:
-            ident["version"] = res[0].get("version")
-    except HTTPException:
-        pass
+        id_rows = await _mikrotik_call(api, "/system/identity/print")
+        if id_rows:
+            ident["identity"] = id_rows[0].get("name")
+        try:
+            res_rows = await _mikrotik_call(api, "/system/resource/print")
+            if res_rows:
+                ident["version"] = res_rows[0].get("version")
+        except HTTPException:
+            # Version is optional; keep identity if we got it
+            pass
+    finally:
+        try:
+            api.close()
+        except Exception:
+            pass
     return ident
 
 
 async def mikrotik_fetch_routes(router: dict, cipher: Cipher) -> List[dict]:
-    """Retrieve routes filtered to configured routing table."""
-    data = await mikrotik_request(router, cipher, "ip/route", timeout=30.0)
-    if not isinstance(data, list):
-        return []
+    """Retrieve routes filtered to the configured routing table (Artamedia prefixes only)."""
+    api = await _mikrotik_connect(router, cipher, timeout=30.0)
+    try:
+        data = await _mikrotik_call(api, "/ip/route/print")
+    finally:
+        try:
+            api.close()
+        except Exception:
+            pass
+
     table = (router.get("routing_table") or "main").lower()
     normalized: List[dict] = []
     for r in data:

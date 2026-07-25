@@ -29,8 +29,8 @@ const AUTO_SYNC_OPTIONS = [
 const MOD = 'mikrotik';
 
 const EMPTY = {
-  name: '', host: '', api_port: 443, username: '', password: '',
-  ssl_enabled: true, verify_ssl: false, routing_table: 'main',
+  name: '', host: '', api_port: 8728, username: '', password: '',
+  ssl_enabled: false, verify_ssl: false, routing_table: 'main',
   status: 'Active', description: '', auto_sync: 'manual',
 };
 
@@ -62,7 +62,7 @@ export default function MikroTikSetup() {
     if (!editing && !form.password) { toast.error('Password wajib saat membuat router baru'); return; }
     setSaving(true);
     try {
-      const payload = { ...form, api_port: Number(form.api_port) || 443 };
+      const payload = { ...form, api_port: Number(form.api_port) || 8728 };
       if (editing && !payload.password) delete payload.password;
       if (editing) await api.put(`/network/routers/${editing.id}`, payload);
       else await api.post('/network/routers', payload);
@@ -105,7 +105,7 @@ export default function MikroTikSetup() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'Manrope' }}>MikroTik Setup</h1>
-          <p className="text-sm text-muted-foreground mt-1">Kelola koneksi ke MikroTik RouterOS v7. Password dienkripsi (AES/Fernet) dan tidak pernah dikirim balik ke frontend.</p>
+          <p className="text-sm text-muted-foreground mt-1">Kelola koneksi ke MikroTik RouterOS v7 via RouterOS API (default port 8728, atau 8729 untuk API-SSL). Password dienkripsi (AES/Fernet) dan tidak pernah dikirim balik ke frontend.</p>
         </div>
         {canWrite && <Button size="sm" onClick={openCreate} data-testid={`${MOD}-add-button`}><Plus className="w-4 h-4 mr-1.5" /> Tambah Router</Button>}
       </div>
@@ -135,7 +135,7 @@ export default function MikroTikSetup() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-base" style={{ fontFamily: 'Manrope' }}>{r.name}</span>
                         <span className={cn('text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border', statusStyle)}>{r.connection_status}</span>
-                        {r.ssl_enabled && <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded border border-primary/30 text-primary bg-primary/10">HTTPS</span>}
+                        {r.ssl_enabled && <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded border border-primary/30 text-primary bg-primary/10">API-SSL</span>}
                       </div>
                       <div className="text-xs text-muted-foreground font-mono mt-0.5">{r.host}:{r.api_port} · user {r.username}</div>
                       {r.description && <div className="text-xs mt-1">{r.description}</div>}
@@ -197,7 +197,7 @@ export default function MikroTikSetup() {
           <div className="grid grid-cols-2 gap-3 py-4">
             <F label="Router Name *" full><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="mis. Core Router JKT-01" /></F>
             <F label="Host / IP Address *"><Input value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} placeholder="mis. 192.168.88.1" /></F>
-            <F label="REST API Port *"><Input type="number" value={form.api_port} onChange={(e) => setForm({ ...form, api_port: e.target.value })} placeholder="443" /></F>
+            <F label="API Port *"><Input type="number" value={form.api_port} onChange={(e) => setForm({ ...form, api_port: e.target.value })} placeholder="8728" /></F>
             <F label="Username *"><Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="api-readonly" autoComplete="off" /></F>
             <F label={`Password ${editing ? '(kosongkan jika tidak berubah)' : '*'}`}><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" /></F>
             <F label="Routing Table"><Input value={form.routing_table} onChange={(e) => setForm({ ...form, routing_table: e.target.value })} placeholder="main" /></F>
@@ -215,8 +215,8 @@ export default function MikroTikSetup() {
             </F>
             <div className="col-span-2 flex items-center justify-between p-3 rounded-md border border-border bg-muted/30">
               <div>
-                <div className="text-sm font-medium">SSL / HTTPS Enabled</div>
-                <div className="text-xs text-muted-foreground">Gunakan https:// untuk REST API (recommended)</div>
+                <div className="text-sm font-medium">API-SSL Enabled (TLS)</div>
+                <div className="text-xs text-muted-foreground">Aktifkan bila router menggunakan API-SSL (port 8729). Default API plain-text di port 8728.</div>
               </div>
               <Switch checked={form.ssl_enabled} onCheckedChange={(v) => setForm({ ...form, ssl_enabled: v })} />
             </div>

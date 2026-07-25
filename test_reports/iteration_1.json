@@ -1,0 +1,36 @@
+{
+  "summary": "Validated MikroTik native RouterOS API (librouteros) integration end-to-end. Backend: 10/10 pytest tests passed for /api/network/routers CRUD, /test, /sync. Failed-path (unreachable host 10.255.255.99:8728 and 127.0.0.1:8728) correctly returns HTTP 200 with {ok:false, error:'MikroTik connection timed out to 10.255.255.99:8728 (API port)'} instead of any 5xx. last_error is persisted and connection_status flips to Error. New defaults api_port=8728 and ssl_enabled=false are honoured on create/update/list. Frontend /network/mikrotik: Tambah Router button visible, API Port input defaults to 8728, API-SSL switch is OFF by default, header text mentions 'port 8728' and 'API-SSL', badge shows 'API-SSL' (not HTTPS). After Test Connection against an unreachable host, a red toast + card banner surfaces 'MikroTik connection timed out to 10.255.255.99:8728 (API port)' — confirming the switch from httpx/REST(443) to librouteros(8728) is fully wired on both backend and frontend.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "router_to_out (network_ipam.py:690,692)", "issue": "Fallback defaults are still api_port=443 and ssl_enabled=True in router_to_out(). Harmless because RouterIn defaults override on create, but inconsistent with the new native-API defaults; should be 8728 / False for legacy docs missing these fields."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_network_mikrotik.py",
+    "/app/test_reports/pytest/mikrotik_results.xml"
+  ],
+  "action_items": [
+    "(Optional) Update router_to_out() defaults from api_port=443/ssl=True to 8728/False to match RouterIn defaults for legacy documents (network_ipam.py lines ~690, 692)."
+  ],
+  "critical_code_review_comments": [
+    "network_ipam.py is 1157 lines — consider splitting mikrotik client, IPAM aggregation, and FastAPI routes into separate modules for maintainability.",
+    "router_to_out() still hard-codes legacy defaults (api_port=443, ssl_enabled=True) — inconsistent with the new native-API defaults set on RouterIn.",
+    "Overall implementation is clean: librouteros connect wrapped with asyncio.wait_for, exceptions mapped to HTTPException with clear detail strings that mention port and host, and /test / /sync gracefully catch HTTPException so they never bubble as 5xx."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_network_mikrotik.py (new)"
+  ],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "100%"},
+  "test_credentials": "admin@noc.local / Admin@123 (used); viewer@noc.local / Password@123 (403 guard test)",
+  "seed_data_creation": "Two test routers (TEST_MikroTik_Unreachable, TEST_MK_LocalRefused, TEST_UI_Unreachable, TEST_UI_Unreachable2) were created during tests and all deleted at the end. DB is left tidy.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The MikroTik native-API refactor is verified. If a real MikroTik router becomes available, add success-path tests for mikrotik_probe (identity/version) and mikrotik_fetch_routes (filter to Artamedia /24 prefixes only) — currently only failure-path coverage exists.",
+  "rca of the issue": "Bug was: MikroTik sync used httpx REST on port 443, but MikroTik native API runs on port 8728 (or 8729 for API-SSL). Fix: replaced httpx REST calls with librouteros async_connect on port 8728, updated RouterIn defaults (api_port=8728, ssl_enabled=False) and the MikroTikSetup.jsx EMPTY defaults + labels ('API-SSL', 8728). Verified by testing against unreachable hosts — the /test endpoint now returns errors that specifically reference port 8728 and the MikroTik API (not HTTPS/REST) and no 5xx leak. Confirmed via backend pytest (10/10 pass) and browser automation (toast + card show 'MikroTik connection timed out to 10.255.255.99:8728 (API port)')."
+}
