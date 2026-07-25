@@ -7,9 +7,9 @@ export default function KontrakProvider() {
       moduleKey="doc-kontrak-provider"
       category="Kontrak"
       scope="provider"
-      title="Contract — Provider"
+      title="Kontrak — Mitra"
       description="Kontrak dengan mitra / provider layanan."
-      breadcrumb={[{ label: 'Dokumen & Arsip' }, { label: 'Contract' }, { label: 'Provider' }]}
+      breadcrumb={[{ label: 'Dokumen & Arsip' }, { label: 'Kontrak' }, { label: 'Mitra' }]}
     />
   );
 }

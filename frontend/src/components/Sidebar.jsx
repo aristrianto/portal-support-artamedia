@@ -5,6 +5,7 @@ import {
   ChevronsLeft, ChevronsRight, ChevronDown, ChevronRight,
   Wifi, Server, Cable, Zap, Network, Handshake, FileSignature, FileCheck2, ScrollText,
   PackageOpen, Boxes, Building2, Waypoints, Headphones, Globe, Router as RouterIcon,
+  Folder, FolderOpen, Map as MapIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -27,15 +28,33 @@ const PARTNER_CATEGORIES = [
   { key: 'mitra-cross-connect', label: 'Cross Connect', to: '/partners/cross-connect', icon: Cable, countKey: ['partners', 'Cross Connect'] },
 ];
 
-// Documents restructured: BA/SLA/Contract each split into Customer + Provider
-const DOCUMENT_CATEGORIES = [
-  { key: 'doc-ba-customer', label: 'BA Customer', to: '/documents/ba/customer', icon: FileCheck2, countKey: ['documents', 'BA_customer'] },
-  { key: 'doc-ba-provider', label: 'BA Provider', to: '/documents/ba/provider', icon: FileCheck2, countKey: ['documents', 'BA_provider'] },
-  { key: 'doc-sla-customer', label: 'SLA Customer', to: '/documents/sla/customer', icon: FileSignature, countKey: ['documents', 'SLA_customer'] },
-  { key: 'doc-sla-provider', label: 'SLA Provider', to: '/documents/sla/provider', icon: FileSignature, countKey: ['documents', 'SLA_provider'] },
-  { key: 'doc-kontrak-customer', label: 'Contract Customer', to: '/documents/kontrak/customer', icon: ScrollText, countKey: ['documents', 'Kontrak_customer'] },
-  { key: 'doc-kontrak-provider', label: 'Contract Provider', to: '/documents/kontrak/provider', icon: ScrollText, countKey: ['documents', 'Kontrak_provider'] },
+// Documents restructured (v2): BA & Kontrak nested submenu (folders), SLA removed,
+// Dokumen Teknis as leaf, plus new "Data Mapping (KMZ)" leaf.
+const DOCUMENT_TREE = [
+  {
+    key: 'doc-ba',
+    label: 'Berita Acara',
+    icon: Folder,
+    openIcon: FolderOpen,
+    countKey: ['documents', 'BA'],
+    children: [
+      { key: 'doc-ba-customer', label: 'BA Customer', to: '/documents/ba/customer', icon: FileCheck2, countKey: ['documents', 'BA_customer'] },
+      { key: 'doc-ba-provider', label: 'BA Mitra', to: '/documents/ba/provider', icon: FileCheck2, countKey: ['documents', 'BA_provider'] },
+    ],
+  },
+  {
+    key: 'doc-kontrak',
+    label: 'Kontrak',
+    icon: Folder,
+    openIcon: FolderOpen,
+    countKey: ['documents', 'Kontrak'],
+    children: [
+      { key: 'doc-kontrak-customer', label: 'Kontrak Customer', to: '/documents/kontrak/customer', icon: ScrollText, countKey: ['documents', 'Kontrak_customer'] },
+      { key: 'doc-kontrak-provider', label: 'Kontrak Mitra', to: '/documents/kontrak/provider', icon: ScrollText, countKey: ['documents', 'Kontrak_provider'] },
+    ],
+  },
   { key: 'doc-teknis', label: 'Dokumen Teknis', to: '/documents/teknis', icon: FileText, countKey: ['documents', 'Teknis'] },
+  { key: 'doc-kmz', label: 'Data Mapping (KMZ)', to: '/documents/kmz-mapping', icon: MapIcon, countKey: ['documents', 'KMZ'] },
 ];
 
 const DATACENTER = [
@@ -131,15 +150,24 @@ export default function Sidebar({ collapsed, onToggle }) {
             <SubItem key={c.key} to={c.to} icon={c.icon} label={c.label} badge={getCount(c.countKey)} testKey={c.key} />
           ))}
 
-          {/* Dokumen & Arsip (no PO/SO, split Customer/Provider) */}
+          {/* Dokumen & Arsip — nested (3-level) submenu */}
           <GroupItem
             open={openDocuments} onToggle={() => setOpenDocuments((o) => !o)}
             icon={FileText} label="Dokumen & Arsip" collapsed={collapsed}
             badge={getCount(['documents', '_total'])} active={inGroup('/documents')} testKey="documents"
           />
-          {!collapsed && openDocuments && DOCUMENT_CATEGORIES.map((c) => (
-            <SubItem key={c.key} to={c.to} icon={c.icon} label={c.label} badge={getCount(c.countKey)} testKey={c.key} />
-          ))}
+          {!collapsed && openDocuments && DOCUMENT_TREE.map((node) =>
+            node.children ? (
+              <NestedFolder
+                key={node.key}
+                node={node}
+                getCount={getCount}
+                pathname={location.pathname}
+              />
+            ) : (
+              <SubItem key={node.key} to={node.to} icon={node.icon} label={node.label} badge={getCount(node.countKey)} testKey={node.key} />
+            )
+          )}
 
           {/* My DataCenter */}
           <GroupItem
@@ -275,5 +303,54 @@ function SubItem({ to, icon: Icon, label, badge, testKey }) {
         )}
       </NavLink>
     </li>
+  );
+}
+
+function NestedFolder({ node, getCount, pathname }) {
+  const childActive = (node.children || []).some((c) => pathname.startsWith(c.to));
+  const [open, setOpen] = useState(() => childActive);
+  useEffect(() => { if (childActive) setOpen(true); }, [childActive]);
+  const total = (node.children || []).reduce((acc, c) => acc + (getCount(c.countKey) || 0), 0);
+  const Icon = open ? (node.openIcon || node.icon) : node.icon;
+  return (
+    <>
+      <li className="ml-3 pl-3 border-l border-border">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          data-testid={APP.sidebarLink(`folder-${node.key}`)}
+          className={cn(
+            'w-full flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-colors',
+            'text-muted-foreground hover:text-foreground hover:bg-accent',
+            childActive && 'text-foreground'
+          )}
+        >
+          <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
+          <span className="truncate flex-1 text-left">{node.label}</span>
+          {total > 0 && (
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">{total}</span>
+          )}
+          {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        </button>
+      </li>
+      {open && node.children.map((c) => (
+        <li key={c.key} className="ml-6 pl-3 border-l border-border">
+          <NavLink
+            to={c.to}
+            data-testid={APP.sidebarLink(c.key)}
+            className={({ isActive }) => cn(
+              'flex items-center gap-2 rounded-md px-2 py-1.5 text-[12.5px] transition-colors',
+              'text-muted-foreground hover:text-foreground hover:bg-accent',
+              isActive && 'bg-primary/10 text-primary font-medium hover:bg-primary/10'
+            )}
+          >
+            <c.icon className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
+            <span className="truncate flex-1">{c.label}</span>
+            {getCount(c.countKey) != null && getCount(c.countKey) > 0 && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">{getCount(c.countKey)}</span>
+            )}
+          </NavLink>
+        </li>
+      ))}
+    </>
   );
 }

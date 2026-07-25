@@ -183,6 +183,28 @@ class DocumentIn(BaseModel):
     file_size: Optional[int] = None
     file_base64: Optional[str] = None  # data URL or raw base64
 
+
+# --- KMZ Mapping (Data Mapping repository) ---
+class KMZFileIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    name: str
+    size: int = 0
+    type: Optional[str] = None
+    base64: str  # data URL or raw base64
+    notes: str = ""
+
+
+class KMZMappingIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    name: str
+    description: str = ""
+    region: str = ""
+    version: str = ""
+    notes: str = ""
+    upload_date: Optional[str] = None
+    files: List[dict] = []  # each: {id, name, size, type, base64, uploaded_at, uploaded_by, notes}
+
+
 LogStatus = Literal['Open', 'Monitoring', 'Pending', 'Resolved']
 LogPriority = Literal['Low', 'Medium', 'High', 'Critical']
 
@@ -563,6 +585,48 @@ build_crud("devices", "devices", DeviceIn, ["name", "hostname", "brand", "model"
 build_crud("interconnections", "interconnections", InterconnectionIn, ["source_device", "source_port", "dest_device", "dest_port", "connection_type", "cable_id", "description"])
 build_crud("crm/broadband-tickets", "broadband_tickets", BroadbandTicketIn, ["ticket_number", "cid", "package", "issue_category", "engineer", "description"])
 build_crud("crm/dedicated-tickets", "dedicated_tickets", DedicatedTicketIn, ["ticket_number", "sid", "service_id", "location", "internal_pic", "provider_pic", "root_cause", "description"])
+build_crud("kmz-mappings", "kmz_mappings", KMZMappingIn, ["name", "description", "region", "version", "notes"])
+
+
+# -----------------------------------------------------------------------------
+# KMZ Mapping — multi-file endpoints
+# -----------------------------------------------------------------------------
+@api.post("/kmz-mappings/{mid}/files")
+async def kmz_add_file(mid: str, body: KMZFileIn, user: dict = Depends(get_current_user)):
+    can_write(user)
+    doc = await db.kmz_mappings.find_one({"id": mid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Mapping not found")
+    file_entry = {
+        "id": new_id(),
+        "name": body.name,
+        "size": body.size,
+        "type": body.type or "application/vnd.google-earth.kmz",
+        "base64": body.base64,
+        "notes": body.notes or "",
+        "uploaded_at": now_iso(),
+        "uploaded_by": user.get("email"),
+    }
+    await db.kmz_mappings.update_one(
+        {"id": mid},
+        {"$push": {"files": file_entry}, "$set": {"updated_at": now_iso(), "updated_by": user.get("email")}},
+    )
+    out = await db.kmz_mappings.find_one({"id": mid}, {"_id": 0})
+    return out
+
+
+@api.delete("/kmz-mappings/{mid}/files/{fid}")
+async def kmz_delete_file(mid: str, fid: str, user: dict = Depends(get_current_user)):
+    can_write(user)
+    doc = await db.kmz_mappings.find_one({"id": mid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Mapping not found")
+    await db.kmz_mappings.update_one(
+        {"id": mid},
+        {"$pull": {"files": {"id": fid}}, "$set": {"updated_at": now_iso(), "updated_by": user.get("email")}},
+    )
+    out = await db.kmz_mappings.find_one({"id": mid}, {"_id": 0})
+    return out
 
 
 # -----------------------------------------------------------------------------
@@ -650,7 +714,8 @@ async def get_counts(user: dict = Depends(get_current_user)):
             "Kontrak_customer": await c("documents", {"category": "Kontrak", "scope": "customer"}),
             "Kontrak_provider": await c("documents", {"category": "Kontrak", "scope": "provider"}),
             "Teknis": await c("documents", {"category": "Teknis"}),
-            "_total": await c("documents"),
+            "KMZ": await c("kmz_mappings"),
+            "_total": await c("documents") + await c("kmz_mappings"),
         },
         "partners": {
             "Broadband": await c("partners", {"category": "Broadband"}),

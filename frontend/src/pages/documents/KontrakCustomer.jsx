@@ -7,9 +7,9 @@ export default function KontrakCustomer() {
       moduleKey="doc-kontrak-customer"
       category="Kontrak"
       scope="customer"
-      title="Contract — Customer"
+      title="Kontrak — Customer"
       description="Kontrak kerjasama dengan pelanggan."
-      breadcrumb={[{ label: 'Dokumen & Arsip' }, { label: 'Contract' }, { label: 'Customer' }]}
+      breadcrumb={[{ label: 'Dokumen & Arsip' }, { label: 'Kontrak' }, { label: 'Customer' }]}
     />
   );
 }

@@ -22,14 +22,13 @@ import MitraMetro from '@/pages/partners/MitraMetro';
 import MitraDarkFiber from '@/pages/partners/MitraDarkFiber';
 import MitraCrossConnect from '@/pages/partners/MitraCrossConnect';
 
-// Documents (Customer + Provider variants; PO/SO removed)
+// Documents (Customer + Mitra variants; SLA + PO/SO removed from menu, routes redirected)
 import BACustomer from '@/pages/documents/BACustomer';
 import BAProvider from '@/pages/documents/BAProvider';
-import SLACustomer from '@/pages/documents/SLACustomer';
-import SLAProvider from '@/pages/documents/SLAProvider';
 import KontrakCustomer from '@/pages/documents/KontrakCustomer';
 import KontrakProvider from '@/pages/documents/KontrakProvider';
 import Teknis from '@/pages/documents/Teknis';
+import DataMappingKMZ from '@/pages/documents/DataMappingKMZ';
 
 // My DataCenter
 import RackDevice from '@/pages/RackDevice';
@@ -86,18 +85,20 @@ function App() {
                 <Route path="partners/dark-fiber" element={<MitraDarkFiber />} />
                 <Route path="partners/cross-connect" element={<MitraCrossConnect />} />
 
-                {/* Documents — restructured: BA/SLA/Contract → Customer + Provider, no PO/SO */}
+                {/* Documents — restructured: BA/Kontrak → Customer + Mitra, Data Mapping (KMZ), SLA removed */}
                 <Route path="documents" element={<Navigate to="/documents/ba/customer" replace />} />
                 <Route path="documents/ba" element={<Navigate to="/documents/ba/customer" replace />} />
                 <Route path="documents/ba/customer" element={<BACustomer />} />
                 <Route path="documents/ba/provider" element={<BAProvider />} />
-                <Route path="documents/sla" element={<Navigate to="/documents/sla/customer" replace />} />
-                <Route path="documents/sla/customer" element={<SLACustomer />} />
-                <Route path="documents/sla/provider" element={<SLAProvider />} />
+                {/* Legacy SLA redirects to Contract Customer */}
+                <Route path="documents/sla" element={<Navigate to="/documents/kontrak/customer" replace />} />
+                <Route path="documents/sla/customer" element={<Navigate to="/documents/kontrak/customer" replace />} />
+                <Route path="documents/sla/provider" element={<Navigate to="/documents/kontrak/provider" replace />} />
                 <Route path="documents/kontrak" element={<Navigate to="/documents/kontrak/customer" replace />} />
                 <Route path="documents/kontrak/customer" element={<KontrakCustomer />} />
                 <Route path="documents/kontrak/provider" element={<KontrakProvider />} />
                 <Route path="documents/teknis" element={<Teknis />} />
+                <Route path="documents/kmz-mapping" element={<DataMappingKMZ />} />
                 {/* Legacy PO/SO redirects to Contract */}
                 <Route path="documents/po" element={<Navigate to="/documents/kontrak/customer" replace />} />
                 <Route path="documents/so" element={<Navigate to="/documents/kontrak/customer" replace />} />

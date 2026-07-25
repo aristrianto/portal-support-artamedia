@@ -7,9 +7,9 @@ export default function BAProvider() {
       moduleKey="doc-ba-provider"
       category="BA"
       scope="provider"
-      title="Berita Acara — Provider"
+      title="Berita Acara — Mitra"
       description="Berita Acara instalasi dan pekerjaan dari mitra / provider."
-      breadcrumb={[{ label: 'Dokumen & Arsip' }, { label: 'Berita Acara' }, { label: 'Provider' }]}
+      breadcrumb={[{ label: 'Dokumen & Arsip' }, { label: 'Berita Acara' }, { label: 'Mitra' }]}
     />
   );
 }
