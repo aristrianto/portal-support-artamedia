@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend-only visual/UX upgrade validation. Verified new sidebar wordmark (Portal Support / Artamedia with Bricolage Grotesque font + gradient), collapsed 'PS' badge, greeting ticker above header with correct time-based label, marquee animation (tickerScroll 38s, pauses on hover), and no regression across Dashboard/Customers/Documents (BA + KMZ)/Network/Operations. Light + dark themes both render brand cleanly. 18/18 UI assertions passed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dashboard charts", "issues": ["Recharts warns 'width(-1) and height(-1) of chart should be greater than 0' briefly during initial mount — pre-existing, not introduced by this iteration. Cosmetic, not blocking."]}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/sidebar_expanded.png", "/app/test_reports/sidebar_dark.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "GreetingTicker still imports the Radio icon (used only inside marquee item) — this is intentional per the ticker content ('Portal Support Artamedia · Enterprise NOC dashboard'). Sidebar correctly no longer imports Radio.",
+    "GreetingTicker recreates the items array whenever `now` changes (every 30s) — cheap but the marquee will re-render/restart. Consider memoizing on Icon+label+displayName only (drop `now`) so the animation loop stays continuous. Non-blocking."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not requested)", "frontend": "100% (18/18 UI checks)"},
+  "test_credentials": "admin@noc.local / Admin@123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 4 focused on visual polish: sidebar wordmark (data-testid=sidebar-brand and sidebar-brand-collapsed 'PS'), Bricolage Grotesque font loaded, brand-gradient class working in dark mode too. GreetingTicker (data-testid=greeting-ticker, greeting-name) is rendered above <Header/> in Layout.jsx, uses tickerScroll animation (38s linear infinite), hover pauses animation-play-state. Greeting label mapping: 4-10 pagi / 10-15 siang / 15-18 sore / 18-04 malam — verified live at h=14 => 'Selamat siang'. Login testids: login-email-input, login-password-input, login-submit-button. Sidebar toggle: sidebar-toggle-button. Theme toggle: theme-toggle-button. All prior iteration_3 features (Dokumen nested BA/Kontrak, KMZ mapping, MikroTik Setup) still load with new branding.",
+  "verified_details": {
+    "sidebar_brand_expanded_text": "Portal SupportArtamedia",
+    "font_family_computed": "\"Bricolage Grotesque\", Manrope, sans-serif",
+    "sidebar_brand_collapsed_text": "PS",
+    "greeting_name_first_name": "Administrator",
+    "greeting_label_at_test_time": "Selamat siang (hour=14, matches 10-15 mapping)",
+    "ticker_animation_name": "tickerScroll",
+    "ticker_animation_duration": "38s",
+    "ticker_hover_play_state": "paused",
+    "ticker_above_header": "ticker top=0px, header top=36px",
+    "dark_theme_brand_gradient_rendered": "linear-gradient(120deg, rgb(116, 177, 25...)) - 120x27px visible",
+    "no_old_wordmark_text": "'NOC Support System' string not present in DOM",
+    "nav_regression_pages_passed": ["/customers/dedicated", "/documents/ba/customer", "/documents/kmz-mapping", "/network/mikrotik", "/operations/incidents"]
+  }
+}

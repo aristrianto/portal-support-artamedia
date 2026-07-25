@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
 
 @layer base {
   :root {
@@ -94,6 +94,54 @@
   .slide-up {
     animation: slideUp 220ms ease-out;
   }
+  .font-display {
+    font-family: 'Bricolage Grotesque', 'Manrope', sans-serif;
+    font-feature-settings: 'ss01', 'ss02';
+    letter-spacing: -0.03em;
+  }
+  .font-brand {
+    font-family: 'Sora', 'Manrope', sans-serif;
+    letter-spacing: -0.02em;
+  }
+  .brand-gradient {
+    background: linear-gradient(120deg, hsl(217 91% 60%) 0%, hsl(199 89% 55%) 45%, hsl(168 76% 45%) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% 200%;
+    animation: brandShift 6s ease-in-out infinite;
+  }
+  .dark .brand-gradient {
+    background: linear-gradient(120deg, hsl(213 94% 72%) 0%, hsl(199 89% 65%) 45%, hsl(168 76% 60%) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% 200%;
+    animation: brandShift 6s ease-in-out infinite;
+  }
+  .ticker-track {
+    display: inline-flex;
+    gap: 3rem;
+    animation: tickerScroll 38s linear infinite;
+    white-space: nowrap;
+    will-change: transform;
+  }
+  .ticker-track:hover {
+    animation-play-state: paused;
+  }
+  .greeting-bar {
+    background:
+      radial-gradient(1200px 60px at 10% 50%, hsl(217 91% 60% / 0.08), transparent 60%),
+      radial-gradient(1200px 60px at 90% 50%, hsl(168 76% 45% / 0.08), transparent 60%),
+      linear-gradient(90deg, hsl(217 91% 60% / 0.06), hsl(199 89% 55% / 0.08), hsl(168 76% 45% / 0.06));
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .dark .greeting-bar {
+    background:
+      radial-gradient(1200px 60px at 10% 50%, hsl(213 94% 72% / 0.12), transparent 60%),
+      radial-gradient(1200px 60px at 90% 50%, hsl(168 76% 55% / 0.10), transparent 60%),
+      linear-gradient(90deg, hsl(213 94% 72% / 0.08), hsl(199 89% 65% / 0.10), hsl(168 76% 55% / 0.08));
+  }
 }
 
 @keyframes fadeIn {
@@ -103,6 +151,14 @@
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes brandShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
 /* Scrollbar (subtle) */

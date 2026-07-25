@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, FileText, ClipboardList, AlertOctagon, Wrench, ShieldCheck, Radio,
+  LayoutDashboard, Users, FileText, ClipboardList, AlertOctagon, Wrench, ShieldCheck,
   ChevronsLeft, ChevronsRight, ChevronDown, ChevronRight,
   Wifi, Server, Cable, Zap, Network, Handshake, FileSignature, FileCheck2, ScrollText,
   PackageOpen, Boxes, Building2, Waypoints, Headphones, Globe, Router as RouterIcon,
@@ -114,14 +114,27 @@ export default function Sidebar({ collapsed, onToggle }) {
         collapsed ? 'w-16' : 'w-64'
       )}
     >
-      <div className={cn('h-14 flex items-center border-b border-border px-3', collapsed ? 'justify-center' : 'gap-2')}>
-        <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-          <Radio className="w-4 h-4 text-primary" strokeWidth={2} />
-        </div>
-        {!collapsed && (
-          <div>
-            <div className="text-sm font-semibold text-foreground leading-tight" style={{ fontFamily: 'Manrope' }}>NOC Support</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-widest">System</div>
+      <div className={cn('h-16 flex items-center border-b border-border px-3', collapsed ? 'justify-center' : 'px-4')}>
+        {collapsed ? (
+          <div
+            data-testid="sidebar-brand-collapsed"
+            className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/30 flex items-center justify-center font-display font-extrabold text-primary text-lg leading-none"
+            title="Portal Support · Artamedia"
+          >
+            PS
+          </div>
+        ) : (
+          <div data-testid="sidebar-brand" className="flex flex-col leading-[1.05] select-none">
+            <span
+              className="font-display font-semibold text-[15px] text-foreground/85 tracking-tight"
+            >
+              Portal Support
+            </span>
+            <span
+              className="font-display font-extrabold text-[26px] brand-gradient tracking-tighter"
+            >
+              Artamedia
+            </span>
           </div>
         )}
       </div>
