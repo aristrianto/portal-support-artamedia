@@ -193,17 +193,6 @@ export default function Sidebar({ collapsed, onToggle }) {
             <SubItem key={c.key} to={c.to} icon={c.icon} label={c.label} badge={getCount(c.countKey)} testKey={c.key} />
           ))}
 
-          {/* CRM */}
-          <GroupItem
-            open={openCRM} onToggle={() => setOpenCRM((o) => !o)}
-            icon={Headphones} label="CRM" collapsed={collapsed}
-            badge={(getCount(['crm', 'broadband']) || 0) + (getCount(['crm', 'dedicated']) || 0)}
-            active={inGroup('/crm')} testKey="crm"
-          />
-          {!collapsed && openCRM && CRM.map((c) => (
-            <SubItem key={c.key} to={c.to} icon={c.icon} label={c.label} badge={getCount(c.countKey)} testKey={c.key} />
-          ))}
-
           {/* Network */}
           <GroupItem
             open={openNetwork} onToggle={() => setOpenNetwork((o) => !o)}
@@ -222,6 +211,17 @@ export default function Sidebar({ collapsed, onToggle }) {
             active={inGroup('/operations')} testKey="operations"
           />
           {!collapsed && openOps && OPERATIONS.map((c) => (
+            <SubItem key={c.key} to={c.to} icon={c.icon} label={c.label} badge={getCount(c.countKey)} testKey={c.key} />
+          ))}
+
+          {/* CRM (positioned right below Operasional NOC) */}
+          <GroupItem
+            open={openCRM} onToggle={() => setOpenCRM((o) => !o)}
+            icon={Headphones} label="CRM" collapsed={collapsed}
+            badge={(getCount(['crm', 'broadband']) || 0) + (getCount(['crm', 'dedicated']) || 0)}
+            active={inGroup('/crm')} testKey="crm"
+          />
+          {!collapsed && openCRM && CRM.map((c) => (
             <SubItem key={c.key} to={c.to} icon={c.icon} label={c.label} badge={getCount(c.countKey)} testKey={c.key} />
           ))}
 
