@@ -40,7 +40,8 @@ export default function Customers() {
   const [sortBy, setSortBy] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(20);
+  const PAGE_SIZE_OPTIONS = [20, 50, 75, 100];
 
   const [openForm, setOpenForm] = useState(false);
   const [openView, setOpenView] = useState(false);
@@ -65,7 +66,7 @@ export default function Customers() {
     } finally {
       setLoading(false);
     }
-  }, [page, sortBy, sortDir, q, category, status]);
+  }, [page, pageSize, sortBy, sortDir, q, category, status]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -227,12 +228,31 @@ export default function Customers() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
             <div>Menampilkan {items.length} dari {total} data</div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} data-testid={CRUD.pagePrev(MOD)}><ChevronLeft className="w-4 h-4" /></Button>
-              <span className="tabular-nums">Hal. {page} / {pageCount}</span>
-              <Button size="sm" variant="outline" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)} data-testid={CRUD.pageNext(MOD)}><ChevronRight className="w-4 h-4" /></Button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] uppercase tracking-widest">Tampilkan</span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}
+                >
+                  <SelectTrigger className="h-8 w-[84px]" data-testid={`${MOD}-page-size`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <SelectItem key={n} value={String(n)} data-testid={`${MOD}-page-size-${n}`}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-[11px] uppercase tracking-widest">data</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} data-testid={CRUD.pagePrev(MOD)}><ChevronLeft className="w-4 h-4" /></Button>
+                <span className="tabular-nums">Hal. {page} / {pageCount}</span>
+                <Button size="sm" variant="outline" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)} data-testid={CRUD.pageNext(MOD)}><ChevronRight className="w-4 h-4" /></Button>
+              </div>
             </div>
           </div>
         </CardContent>

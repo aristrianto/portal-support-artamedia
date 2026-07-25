@@ -51,7 +51,8 @@ export default function CustomerCategoryPage({
   const [sortBy, setSortBy] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(20);
+  const PAGE_SIZE_OPTIONS = [20, 50, 75, 100];
 
   const [openForm, setOpenForm] = useState(false);
   const [openView, setOpenView] = useState(false);
@@ -77,7 +78,7 @@ export default function CustomerCategoryPage({
       setItems(data.items || []);
       setTotal(data.total || 0);
     } catch (err) { toast.error(formatApiError(err)); } finally { setLoading(false); }
-  }, [page, sortBy, sortDir, q, status, category]);
+  }, [page, pageSize, sortBy, sortDir, q, status, category]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -234,12 +235,31 @@ export default function CustomerCategoryPage({
             </Table>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
             <div>Menampilkan {filteredItems.length} dari {total} data{providerFilter !== 'all' ? ' (difilter)' : ''}</div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} data-testid={CRUD.pagePrev(moduleKey)}><ChevronLeft className="w-4 h-4" /></Button>
-              <span className="tabular-nums">Hal. {page} / {pageCount}</span>
-              <Button size="sm" variant="outline" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)} data-testid={CRUD.pageNext(moduleKey)}><ChevronRight className="w-4 h-4" /></Button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] uppercase tracking-widest">Tampilkan</span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}
+                >
+                  <SelectTrigger className="h-8 w-[84px]" data-testid={`${moduleKey}-page-size`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <SelectItem key={n} value={String(n)} data-testid={`${moduleKey}-page-size-${n}`}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-[11px] uppercase tracking-widest">data</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} data-testid={CRUD.pagePrev(moduleKey)}><ChevronLeft className="w-4 h-4" /></Button>
+                <span className="tabular-nums">Hal. {page} / {pageCount}</span>
+                <Button size="sm" variant="outline" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)} data-testid={CRUD.pageNext(moduleKey)}><ChevronRight className="w-4 h-4" /></Button>
+              </div>
             </div>
           </div>
         </CardContent>

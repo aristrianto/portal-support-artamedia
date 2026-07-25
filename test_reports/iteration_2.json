@@ -1,0 +1,35 @@
+{
+  "summary": "Frontend UI verification of Provider-filter-as-dropdown + page-size selector across all Customer & Partner category pages. Logged in as admin@noc.local. 57/68 UI assertions passed. Provider filter is correctly rendered as a shadcn Select (role=combobox) with testid '<moduleKey>-filter-provider' and options 'Semua Provider · N' / '<provider>' / 'Tanpa Provider'. Page-size selector present with default 20 and options 20/50/75/100 on every category page. Changing to 50 correctly triggers a new /api/customers or /api/partners request with page_size=50 and resets to page 1 (visually confirmed via screenshot: 'Hal. 1 / 1'). The 9 'Hal. 1' string-search failures are false negatives caused by non-breaking-space encoding in DOM (visually resets — see screenshot).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Top-level /customers and /partners routes",
+        "issue": "App.js redirects `/customers` → `/customers/dedicated` and `/partners` → `/partners/broadband`. As a result, the standalone Customers.jsx (data-testid='customers-page-size') and Partners.jsx (data-testid='partners-page-size') pages that were updated per the spec are UNREACHABLE via those URLs. The redirect-target category pages do have equivalent page-size selectors under their own moduleKey, so end-users still get the feature, but the exact testids 'customers-page-size' / 'partners-page-size' cannot be observed from the browser. Decide: (a) remove the redirect so aggregate pages render, or (b) remove the unused Customers.jsx/Partners.jsx updates and update the spec.",
+        "affected_selectors": ["customers-page-size", "partners-page-size"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Clarify /customers and /partners top-level route intent — currently they redirect to child pages, so Customers.jsx and Partners.jsx (which contain 'customers-page-size' / 'partners-page-size' testids) are dead code from a routing standpoint.",
+    "Note: the review request also mentions /customers/broadband — per App.js this now redirects to /customers/dedicated (Broadband category was removed for customers). Confirm this is intentional; the spec expected a Broadband customer page.",
+    "Minor: recharts container warning ('width(-1) height(-1)') on Dashboard — not related to this change but visible in console."
+  ],
+  "critical_code_review_comments": [
+    "ProviderFilter test-ids: option testid uses `name.toLowerCase().replace(/\\s+/g, '-')`. If a provider name contains special chars (dots, slashes), the testid remains raw. Acceptable but note.",
+    "CustomerCategoryPage: provider-filter is client-side over the currently loaded page of items, not global — filter counts (`Semua Provider · N`) reflect the current page only, which can be misleading when using page_size=20 vs 100. Consider documenting this behavior.",
+    "Partners.jsx and Customers.jsx (top-level aggregate) appear unreachable given the redirects in App.js — see integration_issues."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only run)", "frontend": "~97% (57/59 substantive checks; 9 'Hal. 1' string checks were false-negatives due to nbsp encoding, visually verified reset works; 2 real gaps are the unreachable top-level testids)"},
+  "test_credentials": "admin@noc.local / Admin@123",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Provider dropdown + page-size selector are fully functional on all 4 customer category pages (/customers/dedicated, /customers/metro-ethernet, /customers/dark-fiber, /customers/cross-connect) and all 5 partner pages (/partners/broadband, /partners/dedicated, /partners/metro-ethernet, /partners/dark-fiber, /partners/cross-connect). Broadband customer page does NOT exist (removed per iteration_1). Top-level /customers and /partners redirect to child pages so the spec-mentioned 'customers-page-size' and 'partners-page-size' testids cannot be exercised via the browser — needs clarification from product owner.",
+  "rca of the issue": "For the 2 real failures: App.js contains `<Route path=\"customers\" element={<Navigate to=\"/customers/dedicated\" replace />} />` and `<Route path=\"partners\" element={<Navigate to=\"/partners/broadband\" replace />} />`. These <Navigate> redirects prevent the aggregate Customers.jsx/Partners.jsx components (which do contain the requested page-size selectors) from ever mounting. Fix: either replace the Navigate with the actual component, or drop the aggregate testids from the spec."
+}
