@@ -81,3 +81,9 @@ Clone and run `https://github.com/zainaris/portal-support-artamedia.git` (intern
 - New **`GreetingTicker`** component rendered above the header: static pill on the left with time-based Indonesian greeting ("Selamat pagi/siang/sore/malam, <first name>") + a right-side marquee (`tickerScroll` 38s linear infinite, hover-pauses) rotating friendly NOC lines, date & time.
 - Added CSS utilities: `.font-display`, `.font-brand`, `.brand-gradient` (animated 120deg blue→cyan→teal), `.ticker-track`, `.greeting-bar` (radial+linear soft gradient background). Both light and dark themes tuned.
 - Verified (iteration_4.json): 18/18 UI checks pass, no regression across Dashboard, Customers, Documents (BA + KMZ), Network, Operations. Font family confirmed `"Bricolage Grotesque", Manrope, sans-serif`; ticker animation matches spec.
+
+### 2026-01 (later) — User avatar upload
+- New backend endpoint `POST /api/auth/me/avatar` — stores `avatar_base64` (data URL) on the user document. Payload cap ~1.8MB decoded → returns 413 if exceeded. Passing `null` clears the avatar. `/auth/me` and `/auth/login` now surface `avatar_base64` automatically (excluded fields are only `_id` and `password_hash`).
+- Frontend Header: avatar circle (data-testid `user-avatar`) shows the uploaded image when present, falling back to the first-letter initial. Dropdown menu adds `avatar-upload-button` and `avatar-remove-button` (with confirm dialog). File is client-side downscaled to a **320×320 JPEG @ q=0.82** before upload for small payload + consistent shape. Non-image files and >8MB inputs rejected before hitting the network.
+- AuthContext exposes `setUser` + `refreshUser` so the header can update the current user instantly after upload/remove.
+- Verified (iteration_5.json): 6/6 backend pytest + all frontend flows (upload, persistence across reload + relogin, replace, remove, validation, regression on Dashboard/KMZ/MikroTik/Broadband).
