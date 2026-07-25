@@ -60,3 +60,18 @@ Clone and run `https://github.com/zainaris/portal-support-artamedia.git` (intern
 - **Page-size selector** added below every Customer & Partner listing (both category pages and the top-level aggregate). Options **20 / 50 / 75 / 100**, default **20**. Changing the value resets to page 1 and re-fetches with the new `page_size`.
 - Applies to: `/customers/*` (Broadband, Dedicated Internet, Metro Ethernet, Dark Fiber, Cross Connect), `/partners/*` (all mitra categories), plus the aggregate `/customers` and `/partners` pages.
 - Verified (iteration_2.json): 57/59 substantive frontend checks pass, dropdown Select behavior + page-size selector work end-to-end (verified /api/customers?page_size=50 fires and page indicator resets). Two "gaps" flagged are pre-existing route redirects (`/customers` → `/customers/dedicated`, `/partners` → `/partners/broadband`), not regressions.
+
+### 2026-01 (later) — Documents nested submenu + KMZ Mapping repository
+- **Sidebar 3-level nesting**: 'Dokumen & Arsip' → Berita Acara (folder → BA Customer / BA Mitra), Kontrak (folder → Kontrak Customer / Kontrak Mitra), Dokumen Teknis (leaf), **Data Mapping (KMZ)** (leaf).
+- **Removed** all SLA menu entries. Legacy `/documents/sla*` routes redirect to Kontrak Customer/Mitra so no 404.
+- **Renamed** BA Provider → **BA Mitra**, Contract Provider → **Kontrak Mitra**, Contract Customer → **Kontrak Customer** (title/breadcrumb).
+- **New page `/documents/kmz-mapping`** — repositori file KMZ jaringan:
+  - Fields: Nama Mapping, Deskripsi, Wilayah/Region, Versi/Revisi, Catatan, Tanggal Upload, Uploaded By.
+  - Multi-file upload (.kmz, max 25MB/file), per-file download, per-file delete (mapping tetap), edit metadata, search, wilayah filter, page-size selector (default 20).
+  - Role-aware: viewer sees no add/edit/delete controls.
+- **Backend**: new `KMZMappingIn` model + `kmz_mappings` collection via `build_crud("kmz-mappings", …)`. Custom endpoints:
+  - `POST /api/kmz-mappings/{id}/files` — append file (auto-sets id, uploaded_at, uploaded_by)
+  - `DELETE /api/kmz-mappings/{id}/files/{fid}` — remove one file, mapping stays
+  - Counts endpoint updated with `documents.KMZ` and adjusted `_total`.
+- Verified (iteration_3.json): backend 8/8 pytest pass, frontend all covered scenarios OK.
+- **Known constraint**: KMZ files stored as base64 inside a MongoDB doc — with many revisions per mapping, doc can approach 16MB limit. Future: swap to GridFS or S3-compatible blob store.
