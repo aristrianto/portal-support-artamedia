@@ -54,3 +54,9 @@ Clone and run `https://github.com/zainaris/portal-support-artamedia.git` (intern
 ## Next Tasks
 - Ask the user to try their real MikroTik (host + username + password on port 8728) and confirm the sync populates `ipam_routes` and downstream Public IPv4 Management.
 - If auth fails, gather the exact error string to determine if the RouterOS user needs `api` policy.
+
+### 2026-01 (later) — Provider filter → dropdown + page-size selector
+- **ProviderFilter** rebuilt as a compact `Select` dropdown (was pill/chip buttons). Same testids preserved for individual providers, plus new `${testKey}-filter-provider` for the trigger.
+- **Page-size selector** added below every Customer & Partner listing (both category pages and the top-level aggregate). Options **20 / 50 / 75 / 100**, default **20**. Changing the value resets to page 1 and re-fetches with the new `page_size`.
+- Applies to: `/customers/*` (Broadband, Dedicated Internet, Metro Ethernet, Dark Fiber, Cross Connect), `/partners/*` (all mitra categories), plus the aggregate `/customers` and `/partners` pages.
+- Verified (iteration_2.json): 57/59 substantive frontend checks pass, dropdown Select behavior + page-size selector work end-to-end (verified /api/customers?page_size=50 fires and page indicator resets). Two "gaps" flagged are pre-existing route redirects (`/customers` → `/customers/dedicated`, `/partners` → `/partners/broadband`), not regressions.
