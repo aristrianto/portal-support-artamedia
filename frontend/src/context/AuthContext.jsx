@@ -23,6 +23,16 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data } = await api.get('/auth/me');
+      setUser(data);
+      return data;
+    } catch (err) {
+      return null;
+    }
+  }, []);
+
   useEffect(() => { bootstrap(); }, [bootstrap]);
 
   const login = async (email, password) => {
@@ -44,7 +54,7 @@ export function AuthProvider({ children }) {
   const isAdmin = hasRole('admin');
 
   return (
-    <AuthContext.Provider value={{ user, checking, login, logout, hasRole, canWrite, canDelete, isAdmin, formatApiError }}>
+    <AuthContext.Provider value={{ user, setUser, refreshUser, checking, login, logout, hasRole, canWrite, canDelete, isAdmin, formatApiError }}>
       {children}
     </AuthContext.Provider>
   );

@@ -406,6 +406,24 @@ async def me(user: dict = Depends(get_current_user)):
     return user
 
 
+class AvatarIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    avatar_base64: Optional[str] = None  # data URL. Pass None/empty to remove.
+
+
+@api.post("/auth/me/avatar")
+async def update_avatar(body: AvatarIn, user: dict = Depends(get_current_user)):
+    avatar = (body.avatar_base64 or "").strip() or None
+    if avatar and len(avatar) > 2_500_000:  # ~1.8MB decoded, hard cap on payload
+        raise HTTPException(status_code=413, detail="Avatar terlalu besar. Maksimum ~1.5MB")
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"avatar_base64": avatar, "updated_at": now_iso()}},
+    )
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    return fresh
+
+
 @api.get("/health")
 async def health():
     """Public unauthenticated health check for the login system status widget."""
